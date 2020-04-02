@@ -1,0 +1,255 @@
+<!-- @format -->
+
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Document</title>
+		<script src="./vue.js"></script>
+		<style>
+			body {
+				text-align: center;
+			}
+
+			.ctstyle {
+				position: relative;
+				display: inline;
+				background-color: lightcoral;
+				padding: 10px;
+				border-radius: 10px;
+			}
+
+			.clstyle {
+				color: rgb(204, 17, 17);
+			}
+
+			.cldiv {
+				margin-top: 100px;
+				/* display: inline-block; */
+			}
+			.cldiv div {
+				height: 50px;
+				line-height: 50px;
+				border: 1px dotted orange;
+				display: flex;
+				justify-content: space-around;
+			}
+			.cldiv div:hover{
+				height: 70px;
+				line-height: 70px;
+				box-shadow: 5px 5px 5px 5px gray;
+				transform: translateX(-20px);
+				background-color: lightpink;
+				transition: 1s;
+			}
+
+			.cldiv input {
+				margin-top: 15px;
+				height: 20px;
+				width: 30px;
+				border: none;
+			}
+
+			a {
+				text-decoration: none;
+				padding-left: 10px;
+				padding-right: 10px;
+			}
+			.sub{
+				font-size: 25px;
+			}
+			.add {
+				font-size: 18px;
+			}
+			.addsub:hover{
+				font-weight: bold;
+				font-size: 2em;
+				transition: 1.5s;
+				color: darkcyan;
+			}
+
+			input {
+				width: 30px;
+			}
+
+			h3 {
+				color: lightcoral;
+			}
+
+			button {
+				width: 50px;
+				height: 50px;
+				border: 0px;
+				border-radius: 100px;
+			}
+
+			button:hover {
+				transition: 1.5s;
+				background-color: lightcoral;
+				color: white;
+				width: 100%;
+				height: 75px;
+				font-size: 30px;
+			}
+
+			span {
+				border: 1px dotted orange;
+			}
+		</style>
+	</head>
+
+	<body>
+		<div id="app">
+			<cart-title :user-name="user" class="ctstyle"></cart-title>
+			<cart-list
+				:list="goodList"
+				:class="{clstyle: clstyle}"
+				@change-num="changeNum($event)"
+				@cart-del="delCart($event)"
+			></cart-list>
+			<cart-total :list="goodList"></cart-total>
+		</div>
+<script>
+			var cartTitle = {
+				props: ["user-name"],
+				template: "<div>{{userName}} 的购物车</div>"
+			};
+			var cartList = {
+				props: ["list"],
+				template: `
+                    <div class="cldiv">
+							<div :key="item.id" v-for="(item, index) in list">
+							<a>编号：{{item.id}}</a>
+							<a>商品名称：{{item.goodName}}</a>
+							<a>单价：{{item.singlePrice}}</a>
+							<a href="" @click="sub(item.id)" class="addsub sub">-</a>
+							<input type="text" :value="item.num" @blur="changeNum(item.id, $event)">
+							<a href="" @click.prevent="add(item.id)"  class="addsub add">+</a>
+							<a @click="del(item.id)">删除</a>
+							</div>
+                    </div>
+            `,
+				methods: {
+					changeNum: function(id, event) {
+						this.$emit("change-num", {
+							// vm.$emit( eventName, […args] )
+							// $emit：使用事件抛出一个值
+							// 为什么要这样，使用this，因为要通过事件，告诉父组件更改值，子组件不能直接改值
+							// 通过 $event 访问到被抛出的这个值
+							id: id,
+							type: "change",
+							num: event.target.value
+						});
+					},
+					add: function(id) {
+						// 这里不使用$event，是应为不用跟父组件传值
+						this.$emit("change-num", {
+							// 同样是改变num，使用同一个函数，不同的处理方法
+							id: id,
+							type: "add"
+						});
+					},
+					sub: function(id) {
+						this.$emit("change-num", {
+							id: id,
+							type: "sub"
+						});
+					},
+					del: function(id) {
+						this.$emit("cart-del", id);
+						// $emit 抛出值与接收值类似于v-bind的传值，左边是绑定的，右边是父组件的值，思想一样
+					}
+				}
+			};
+			// template中想换行，要用斜点，而不是引号
+			var cartTotal = {
+				props: ["list"],
+				template: `
+                        <div>
+                            <h3>总价：{{total}}</h3>
+                            <button>结算</button>
+                        </div>
+            `,
+				computed: {
+					total: function() {
+						var totalCount = 0;
+						this.list.forEach(item => {
+							//  遍历list数组
+							// 箭头函数，当只有一个参数的时候，括号去掉
+							totalCount += item.singlePrice * item.num;
+						});
+						return totalCount;
+					}
+				}
+			};
+			var vm = new Vue({
+				el: "#app",
+				data: {
+					clstyle: true,
+					user: "张三",
+					goodList: [
+						{
+							id: 1,
+							goodName: "花生米",
+							singlePrice: 15,
+							num: 0
+						},
+						{
+							id: 2,
+							goodName: "甜玉米",
+							singlePrice: 5,
+							num: 0
+						},
+						{
+							id: 3,
+							goodName: "瓜子米",
+							singlePrice: 10,
+							num: 0
+						}
+					]
+				},
+				components: {
+					"cart-title": cartTitle,
+					"cart-list": cartList,
+					"cart-total": cartTotal
+				},
+				methods: {
+					changeNum: function(val) {
+						if (val.type == "change") {
+							this.goodList.some(item => {
+								// some 遍历数组
+								if (item.id == val.id) {
+									// 遍历找到对应id
+									item.num = val.num;
+									return true;
+									// 找到对应的值后，终止遍历
+								}
+							});
+						} else if (val.type == "sub") {
+							this.goodList.some(item => {
+								if (item.id == val.id) {
+									item.num -= 1;
+									return true;
+								}
+							});
+						} else if (val.type == "add") {
+							this.goodList.some(item => {
+								if (item.id == val.id) {
+									item.num += 1;
+									return true;
+								}
+							});
+						}
+					},
+					delCart: function(id) {
+						var index = this.goodList.findIndex(item => {
+							return item.id == id;
+						});
+						this.goodList.splice(index, 1);
+					}
+				}
+			});
+		</script>
+	</body>
+</html>
